@@ -1,0 +1,13 @@
+{
+    "name": "orgci Workflow",
+    "description": "organization-ci workflow template.",
+    "iconName": "CI",
+    "categories": [
+        "Yaml"
+    ],
+    "filePatterns": [
+        "package.json$",
+        "^Dockerfile",
+        ".*\\.md$"
+    ]
+}
