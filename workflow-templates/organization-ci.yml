@@ -2,20 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [ $default-branch ]
+    branches: [ master ]
   pull_request:
-    branches: [ $default-branch ]
+    branches: [ master ]
 
 jobs:
   build:
 
     runs-on: ubuntu-latest
-    env:
-      
-      GITHUB_TOKEN: ${{ secrets.TOKEN }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
       
     steps:
     - uses: actions/checkout@v2 
@@ -28,8 +22,9 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Build with Gradle
-      run: ./gradlew build
-      
+      run: ./gradlew build  
+  
+ 
     - name: Cache SonarCloud packages
       uses: actions/cache@v1
       with:
@@ -47,22 +42,47 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: ./gradlew build sonarqube --info
+      
+  test: 
+  
+    runs-on: ubuntu-latest
+    steps:
+    - name: test job
+      run: echo "This is test job"
+       
+  dockerlogin:
+    runs-on: ubuntu-latest
+    steps:
 
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+       aws-region: us-east-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+  
+  trigger: 
+  
+    runs-on: ubuntu-latest
+    steps:
     - name: Trigger next workflow
-        if: success()
-        uses: peter-evans/repository-dispatch@v1
-        with:
-          token: ${{ secrets.TOKEN }}
-          repository: puredevops/spring-boot-actuator
-          event-type: windows
-          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
+      if: success()
+      uses: peter-evans/repository-dispatch@v1
+      with:
+        token: ${{ secrets.TOKEN }}
+        repository: puredevops/spring-boot-actuator
+        event-type: windows
+        client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
           
     - name: Set final status
-        if: failure()
-        uses: peter-evans/repository-dispatch@v1
-        with:
-          token: ${{ secrets.TOKEN }}
-          repository: puredevops/spring-boot-actuator
-          event-type: final
-          client-payload: '{"success": false}'
-
+      if: failure()
+      uses: peter-evans/repository-dispatch@v1
+      with:
+        token: ${{ secrets.TOKEN }}
+        repository: puredevops/spring-boot-actuator
+        event-type: final
+        client-payload: '{"success": false}'
